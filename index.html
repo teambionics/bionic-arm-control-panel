@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bionic Arm Current Monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js Library -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+
+    /* Button Styles */
+    .button {
+      padding: 12px 25px;
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      margin: 10px;
+    }
+
+    .button:hover {
+      background: linear-gradient(135deg, #2980b9, #3498db);
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Icon Styles with Gradient and Shadow */
+    .button i {
+      margin-right: 8px;
+      color: #fff;
+      background: linear-gradient(135deg, #1abc9c, #16a085);
+      padding: 5px;
+      border-radius: 50%;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+    }
+
+    .button:hover i {
+      background: linear-gradient(135deg, #16a085, #1abc9c);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Input Field Styling */
+    input {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    input:focus {
+      border-color: #3498db;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Centering and Responsive Styles */
+    #currentData {
+      margin: 20px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      width: 60%;
+      background-color: #ecf0f1;
+      font-size: 20px;
+      color: #16a085;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Adjusting layout for mobile */
+    canvas {
+      max-width: 100%;
+      height: 300px;
+      margin-top: 20px;
+    }
+
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    .settings-section {
+      margin: 20px auto;
+      max-width: 80%;
+      padding: 20px;
+      background-color: #f9fbfd;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .settings-section input {
+      width: 40%;
+      margin: 5px auto;
+      display: block;
+      text-align: center;
+    }
+
+    .logging-controls {
+      margin-top: 20px;
+    }
+
+    #alertBox {
+      color: #e74c3c;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    #deviceStatus {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #34495e;
+    }
+
+    /* Dark Mode and Shadow Effects */
+    .dark-mode {
+      background-color: #2c3e50;
+      color: #ecf0f1;
+    }
+
+    .dark-mode .button {
+      background-color: #34495e;
+      color: white;
+    }
+
+    .dark-mode input, .dark-mode label {
+      color: #ecf0f1;
+    }
+
+    .dark-mode #alertBox {
+      color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Bionic Arm Current Monitor</h1>
+  <button id="connectBtn" class="button"><i class="fas fa-bluetooth"></i> Connect to Bluetooth</button>
+  
+  <div id="currentData">Current Data will appear here...</div>
+
+  <div class="settings-section">
+    <label for="threshold">Set Overcurrent Threshold (mA):</label>
+    <input type="number" id="threshold" value="2000">
+    <button id="setThresholdBtn" class="button"><i class="fas fa-tachometer-alt"></i> Set Threshold</button>
+  </div>
+
+  <div class="logging-controls">
+    <button id="startLoggingBtn" class="button"><i class="fas fa-play"></i> Start Logging</button>
+    <button id="stopLoggingBtn" class="button"><i class="fas fa-stop"></i> Stop Logging</button>
+    <button id="logDataBtn" class="button"><i class="fas fa-file-download"></i> Export Data</button>
+  </div>
+
+  <p id="alertBox"></p>
+
+  <!-- Chart Container -->
+  <canvas id="currentChart"></canvas>
+
+  <div class="settings-section">
+    <label for="emailAlert">Enter Email for Overcurrent Alerts:</label>
+    <input type="email" id="emailAlert" placeholder="example@example.com">
+    <button id="setEmailAlertBtn" class="button"><i class="fas fa-envelope"></i> Set Alert</button>
+  </div>
+
+  <div id="deviceStatus">Device status and battery level will appear here...</div>
+
+  <div class="settings-section">
+    <button id="darkModeToggle" class="button"><i class="fas fa-moon"></i> Dark Mode</button>
+  </div>
+
+  <div class="settings-section">
+    <button id="zoomInBtn" class="button"><i class="fas fa-search-plus"></i> Zoom In</button>
+    <button id="zoomOutBtn" class="button"><i class="fas fa-search-minus"></i> Zoom Out</button>
+  </div>
+
+  <script>
+    let bluetoothDevice;
+    let bluetoothCharacteristic;
+    let currentThreshold = 2000;  // Default threshold in mA
+    let currentDataArray = [];    // Array to store current values for the chart
+    let timeArray = [];           // Array to store time labels for the chart
+    let loggingData = [];         // Array to store logging data
+    let loggingActive = false;    // Flag for logging status
+
+    // Set up the Chart.js chart
+    const ctx = document.getElementById('currentChart').getContext('2d');
+    const currentChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: timeArray,
+        datasets: [{
+          label: 'Current (mA)',
+          data: currentDataArray,
+          borderColor: '#3498db',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.1
+        }]
+      },
+      options: {
+        scales: {
+          x: { title: { display: true, text: 'Time (s)' }},
+          y: { title: { display: true, text: 'Current (mA)' }}
+        },
+        animation: {
+          duration: 500,
+          easing: 'easeOutExpo'
+        }
+      }
+    });
+
+    // Connect to Bluetooth when button is clicked
+    document.getElementById('connectBtn').addEventListener('click', async () => {
+      try {
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ services: ['00001101-0000-1000-8000-00805f9b34fb'] }] // UUID for serial devices like HC-05
+        });
+
+        const server = await bluetoothDevice.gatt.connect();
+        const service = await server.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
+        bluetoothCharacteristic = await service.getCharacteristic('00001101-0000-1000-8000-00805f9b34fb');
+
+        await bluetoothCharacteristic.startNotifications();
+        bluetoothCharacteristic.addEventListener('characteristicvaluechanged', handleData);
+
+        document.getElementById('deviceStatus').innerHTML = "Connected to Bluetooth!";
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    function handleData(event) {
+      const value = new TextDecoder().decode(event.target.value);
+      const currentData = parseFloat(value.split(' ')[1]);  // Extract numeric value
+      document.getElementById('currentData').innerHTML = `Current: ${currentData} mA`;
+
+      const currentTime = new Date().toLocaleTimeString();
+      timeArray.push(currentTime);
+      currentDataArray.push(currentData);
+
+      if (timeArray.length > 20) {
+        timeArray.shift();
+        currentDataArray.shift();
+      }
+
+      currentChart.update();
+
+      if (currentData > currentThreshold) {
+        document.getElementById('alertBox').innerHTML = `Warning: Overcurrent detected! (${currentData} mA)`;
+      } else {
+        document.getElementById('alertBox').innerHTML = '';
+      }
+    }
+
+    // Set threshold
+    document.getElementById('setThresholdBtn').addEventListener('click', () => {
+      currentThreshold = document.getElementById('threshold').value;
+      alert(`Threshold set to ${currentThreshold} mA`);
+    });
+
+    // Logging controls
+    document.getElementById('startLoggingBtn').addEventListener('click', () => {
+      loggingActive = true;
+      loggingData = [];
+    });
+
+    document.getElementById('stopLoggingBtn').addEventListener('click', () => {
+      loggingActive = false;
+    });
+
+    document.getElementById('logDataBtn').addEventListener('click', () => {
+      const csvContent = loggingData.map(row => `${row.time},${row.current}`).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'current_log.csv';
+      link.click();
+    });
+
+    // Set Email Alert
+    document.getElementById('setEmailAlertBtn').addEventListener('click', () => {
+      const email = document.getElementById('emailAlert').value;
+      alert(`Email alert set to: ${email}`);
+    });
+
+    // Dark Mode Toggle
+    document.getElementById('darkModeToggle').addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+    });
+
+    // Zoom functionality
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+      currentChart.options.scales.x.min += 2;
+      currentChart.options.scales.x.max -= 2;
+      currentChart.update();
+    });
+
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+      currentChart.options.scales.x.min -= 2;
+      currentChart.options.scales.x.max += 2;
+      currentChart.update();
+    });
+  </script>
+
+</body>
+</html>
