@@ -132,6 +132,10 @@
       color: #ecf0f1;
     }
 
+    .dark-mode h1 {
+      color: #ecf0f1; /* Change title color in dark mode */
+    }
+
     .dark-mode .button {
       background-color: #34495e;
       color: white;
@@ -143,6 +147,43 @@
 
     .dark-mode #alertBox {
       color: #c0392b;
+    }
+
+    .dark-mode .settings-section, .dark-mode input {
+      background-color: #34495e;
+      color: #ecf0f1;
+    }
+
+    .dark-mode input {
+      border-color: #ecf0f1;
+    }
+
+    /* Chart.js Text Colors */
+    .dark-mode .chartjs-title {
+      color: #ecf0f1; /* Title color of the chart */
+    }
+
+    .dark-mode .chartjs-axis-title {
+      color: #ecf0f1; /* Axis title color */
+    }
+
+    .dark-mode .chartjs-tick {
+      color: #ecf0f1; /* Tick color */
+    }
+
+    /* Watermark */
+    .watermark {
+      font-size: 14px;
+      color: #7f8c8d;
+      margin-top: 30px;
+    }
+
+    /* Additional styles for better visibility */
+    .chartjs-tick,
+    .chartjs-title,
+    #currentData,
+    #deviceStatus {
+      color: #000; /* Dark black color for visibility */
     }
   </style>
 </head>
@@ -187,6 +228,9 @@
     <button id="zoomOutBtn" class="button"><i class="fas fa-search-minus"></i> Zoom Out</button>
   </div>
 
+  <!-- Watermark -->
+  <div class="watermark">Team Bionic Pvt. Limited (All rights reserved)</div>
+
   <script>
     let bluetoothDevice;
     let bluetoothCharacteristic;
@@ -206,18 +250,36 @@
           label: 'Current (mA)',
           data: currentDataArray,
           borderColor: '#3498db',
+          backgroundColor: 'rgba(52, 152, 219, 0.2)',
           borderWidth: 2,
-          fill: false,
-          tension: 0.1
+          fill: true,
         }]
       },
       options: {
+        responsive: true,
         scales: {
-          x: { title: { display: true, text: 'Time (s)' }},
-          y: { title: { display: true, text: 'Current (mA)' }}
+          x: {
+            title: {
+              display: true,
+              text: 'Time (s)',
+              color: "#000"  // X-axis title color
+            },
+            ticks: { color: "#000" }  // X-axis ticks color
+          },
+          y: { 
+            title: { display: true, text: 'Current (mA)', color: "#000" },  // Y-axis title color
+            ticks: { color: "#000" }  // Y-axis ticks color
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#000"  // Legend color
+            }
+          }
         },
         animation: {
-          duration: 500,
+          duration: 500,  // Smooth transition animation for the chart
           easing: 'easeOutExpo'
         }
       }
@@ -226,14 +288,17 @@
     // Connect to Bluetooth when button is clicked
     document.getElementById('connectBtn').addEventListener('click', async () => {
       try {
+        // Request a Bluetooth device with Serial service
         bluetoothDevice = await navigator.bluetooth.requestDevice({
           filters: [{ services: ['00001101-0000-1000-8000-00805f9b34fb'] }] // UUID for serial devices like HC-05
         });
 
+        // Connect to the GATT server
         const server = await bluetoothDevice.gatt.connect();
         const service = await server.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
         bluetoothCharacteristic = await service.getCharacteristic('00001101-0000-1000-8000-00805f9b34fb');
 
+        // Start receiving data
         await bluetoothCharacteristic.startNotifications();
         bluetoothCharacteristic.addEventListener('characteristicvaluechanged', handleData);
 
@@ -243,6 +308,7 @@
       }
     });
 
+    // Handle incoming data from Bluetooth
     function handleData(event) {
       const value = new TextDecoder().decode(event.target.value);
       const currentData = parseFloat(value.split(' ')[1]);  // Extract numeric value
